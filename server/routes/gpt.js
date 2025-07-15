@@ -9,7 +9,6 @@ const openai = new OpenAI({
 });
 
 router.post('/generate-route', async (req, res) => {
-  console.log('✅ API HIT: /api/generate-route');  // <--- 加这一行
   const { location, preference } = req.body;
 
   const prompt = `I want to visit ${location}. I enjoy ${preference}. Please suggest a 3-stop travel itinerary with times and brief explanations.`;
