@@ -9,7 +9,7 @@ const UserForm = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:5000/api/generate-route', {
+      const response = await fetch('http://localhost:3001/api/generate-route', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
