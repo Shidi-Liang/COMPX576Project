@@ -1,69 +1,74 @@
-/*import React from 'react';
-import MapPage from './pages/MapPage';
-
-function App() {
-  return (
-    <div className="App">
-      <MapPage />
-    </div>
-  );
-}
-
-export default App;*/
-
-/*import React, { useState } from 'react';
-import LoginForm from './components/LoginForm';
-import MapPage from './pages/MapPage';
-
-function App() {
-  const [user, setUser] = useState(null);
-
-  return (
-    <div>
-      {!user ? (
-        <LoginForm onLogin={setUser} />
-      ) : (
-        <MapPage user={user} />
-      )}
-    </div>
-  );
-}
-
-export default App;*/
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import "./Auth.css";
 import LoginForm from "./components/LoginForm";
 import RegisterForm from "./components/RegisterForm";
 import MapPage from "./pages/MapPage";
+import TopNav from "./components/TopNav";
 
 function App() {
   const [user, setUser] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
+  const [showSavedRoutes, setShowSavedRoutes] = useState(false); // ✅ 头像菜单打开“我的路线”
 
-  const handleLogin = (loggedInUser) => {
-    setUser(loggedInUser);
+  // 挂载时从 localStorage 恢复登录
+  useEffect(() => {
+    const cachedUser = localStorage.getItem("stb_user");
+    if (cachedUser) {
+      try { setUser(JSON.parse(cachedUser)); } catch {}
+    }
+  }, []);
+
+  // 登录成功：保存 user / token（LoginForm 要传 onLogin(user, remember, token)）
+  const handleLogin = (u, remember, token) => {
+    setUser(u);
+    if (remember) {
+      localStorage.setItem("stb_user", JSON.stringify(u));
+      if (token) localStorage.setItem("stb_token", token);
+    } else {
+      localStorage.removeItem("stb_user");
+      localStorage.removeItem("stb_token");
+    }
   };
 
-  const handleRegistered = () => {
-    // 注册成功后回到登录页（也可以在这里直接 setUser 自动登录）
-    setShowRegister(false);
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem("stb_user");
+    localStorage.removeItem("stb_token");
+    setShowSavedRoutes(false);
   };
 
+  const handleRegistered = () => setShowRegister(false);
+
+  // 已登录：顶部导航 + 主页面
   if (user) {
-    return <MapPage user={user} />;
+    return (
+      <div>
+        <TopNav
+          user={user}
+          onLogout={handleLogout}
+          onMyRoutes={() => setShowSavedRoutes(true)}   // ✅ 点击菜单打开
+        />
+        <MapPage
+          user={user}
+          showSavedRoutes={showSavedRoutes}              // ✅ 传给 MapPage
+          onCloseSavedRoutes={() => setShowSavedRoutes(false)}
+        />
+      </div>
+    );
   }
 
+  // 未登录：登录 / 注册
   return (
     <div>
       {showRegister ? (
         <RegisterForm
-          onRegistered={handleRegistered}            // 注册成功时调用
-          onShowLogin={() => setShowRegister(false)}  // “已有账号？去登录”
+          onRegistered={handleRegistered}
+          onShowLogin={() => setShowRegister(false)}
         />
       ) : (
         <LoginForm
-          onLogin={handleLogin}                       // 登录成功时调用
-          onShowRegister={() => setShowRegister(true)}// “没有账号？去注册”
+          onLogin={handleLogin}
+          onShowRegister={() => setShowRegister(true)}
         />
       )}
     </div>
@@ -71,4 +76,3 @@ function App() {
 }
 
 export default App;
-
