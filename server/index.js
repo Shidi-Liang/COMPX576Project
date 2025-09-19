@@ -34,6 +34,11 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/route', routeRoutes);
 
+// 健康检查路由（Render 会定时访问）
+app.get('/healthz', (req, res) => {
+  res.status(200).send('ok');
+});
+
 // MongoDB 连接
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
