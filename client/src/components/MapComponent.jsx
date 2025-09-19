@@ -1,484 +1,355 @@
-/*import React from 'react';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+// src/components/MapComponent.jsx
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import {
+  GoogleMap,
+  Marker,
+  DirectionsRenderer,
+  useJsApiLoader,
+} from "@react-google-maps/api";
 
-const MapComponent = ({ places }) => {
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-  });
+const containerStyle = { width: "100%", height: "100%" }; // 跟随父容器高度
+const defaultCenter = { lat: -36.8485, lng: 174.7633 };
+const getRouteColor = (i) => `hsl(${(i * 75) % 360}, 100%, 50%)`;
 
-  if (!isLoaded) return <div>Loading...</div>;
+const POI_EMOJI = {
+  restaurant: "🍜",
+  gas_station: "⛽",
+  supermarket: "🛒",
+  toilet: "🚻",
+};
 
-  return (
-    <GoogleMap
-      center={{ lat: -36.8485, lng: 174.7633 }} // 
-      zoom={12}
-      mapContainerStyle={{ width: '100%', height: '600px' }}
-    >
-      {places.map((place, index) => (
-        <Marker
-          key={index}
-          position={{ lat: place.lat, lng: place.lng }}
-        />
-      ))}
-    </GoogleMap>
+const MapComponent = ({ routeOptions, onAddPoi }) => {
+  const [routeMarkersList, setRouteMarkersList] = useState([]); // array<array<{lat,lng,name}>>
+  const [directionsList, setDirectionsList] = useState([]); // array<google.maps.DirectionsResult|null>
+  const [poiMarkers, setPoiMarkers] = useState([]); // array<{placeId,pos,name,type,rating,openNow,address}>
+  const [selectedTypes, setSelectedTypes] = useState(
+    new Set(["restaurant", "gas_station", "supermarket", "toilet"])
   );
-};
 
-export default MapComponent;*/
-
-// client/src/components/MapComponent.jsx
-/*import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { GoogleMap, Marker, DirectionsRenderer, useJsApiLoader } from '@react-google-maps/api';
-
-const containerStyle = {
-  width: '100%',
-  height: '100vh',
-};
-
-const center = {
-  lat: -36.8485,
-  lng: 174.7633,
-};
-
-const MapComponent = ({ routeOptions }) => {
-  const [markersList, setMarkersList] = useState([]); // array of arrays
-  const [directionsList, setDirectionsList] = useState([]); // array of results
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-    libraries: ['places'],
+    libraries: ["places", "geometry"],
   });
 
+  // ---------- Helpers ----------
+  const haversineKm = (a, b) => {
+    const R = 6371;
+    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+    const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+    const s1 =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((a.lat * Math.PI) / 180) *
+        Math.cos((b.lat * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s1));
+  };
+
+  const samplePointsFromDirections = (directions, stepMeters = 1000, cap = 12) => {
+    if (!window.google) return [];
+    const route = directions?.routes?.[0];
+    if (!route) return [];
+    const pointsStr =
+      route.overview_polyline?.points ||
+      route.overviewPolyline?.points ||
+      route.overview_polyline;
+    const path = window.google.maps.geometry.encoding.decodePath(pointsStr);
+    const out = [];
+    let last = null;
+    for (const ll of path) {
+      const p = { lat: ll.lat(), lng: ll.lng() };
+      if (!last || haversineKm(last, p) * 1000 >= stepMeters) {
+        out.push(p);
+        last = p;
+      }
+    }
+    return out.slice(0, cap);
+  };
+
+  // ---------- Geocode & Directions ----------
   const geocodePlaces = async (places) => {
+    if (!window.google) return [];
     const geocoder = new window.google.maps.Geocoder();
     const results = await Promise.all(
-      places.map(place =>
-        new Promise(resolve => {
-          geocoder.geocode({ address: place }, (res, status) => {
-            if (status === 'OK' && res[0]) {
-              const { lat, lng } = res[0].geometry.location;
-              resolve({ lat: lat(), lng: lng(), name: place });
-            } else {
-              console.warn('⚠️ Geocode failed for:', place);
-              resolve(null);
-            }
-          });
-        })
+      places.map(
+        (place) =>
+          new Promise((resolve) => {
+            geocoder.geocode({ address: place }, (res, status) => {
+              if (status === "OK" && res?.[0]) {
+                const { lat, lng } = res[0].geometry.location;
+                resolve({ lat: lat(), lng: lng(), name: place });
+              } else {
+                console.warn("Geocode failed:", place, status);
+                resolve(null);
+              }
+            });
+          })
       )
     );
     return results.filter(Boolean);
   };
 
   const loadRoutes = useCallback(async () => {
-    if (!isLoaded || !routeOptions) return;
+    if (!isLoaded || !routeOptions?.length || !window.google) return;
 
-    const allMarkers = [];
+    const allRouteMarkers = [];
     const allDirections = [];
 
     for (let i = 0; i < routeOptions.length; i++) {
-      const stops = routeOptions[i].stops.map(stop => stop.place);
+      const stops = routeOptions[i].stops.map((s) => s.place);
       const coords = await geocodePlaces(stops);
-
       if (coords.length < 2) {
-        console.warn(`⚠️ Skipping route ${i + 1}: not enough valid coordinates`, coords);
+        console.warn(`Skipping route ${i + 1}: not enough coords`);
+        allRouteMarkers.push([]);
+        allDirections.push(null);
         continue;
       }
+      allRouteMarkers.push(coords);
 
-      allMarkers.push(coords);
-
-      const directionsService = new window.google.maps.DirectionsService();
-      const result = await new Promise(resolve => {
-        directionsService.route(
+      const svc = new window.google.maps.DirectionsService();
+      const dir = await new Promise((resolve) => {
+        svc.route(
           {
             origin: coords[0],
             destination: coords[coords.length - 1],
-            waypoints: coords.slice(1, -1).map(loc => ({ location: loc, stopover: true })),
+            waypoints: coords
+              .slice(1, -1)
+              .map((loc) => ({ location: loc, stopover: true })),
             travelMode: window.google.maps.TravelMode.DRIVING,
+            provideRouteAlternatives: false,
           },
-          (res, status) => {
-            if (status === 'OK') {
-              resolve(res);
-            } else {
-              console.warn(`⚠️ Directions request failed for route ${i + 1}:`, status);
-              resolve(null);
-            }
-          }
+          (res, status) => resolve(status === "OK" ? res : null)
         );
       });
-
-      allDirections.push(result);
+      allDirections.push(dir);
     }
 
-    setMarkersList(allMarkers);
+    setRouteMarkersList(allRouteMarkers);
     setDirectionsList(allDirections);
-  }, [routeOptions, isLoaded]);
+  }, [isLoaded, routeOptions]);
 
   useEffect(() => {
     loadRoutes();
   }, [loadRoutes]);
 
-  const onLoad = useCallback(map => {
-    mapRef.current = map;
-  }, []);
+  // ---------- POIs along the first route ----------
+  const fetchPoisAlongRoute = async () => {
+    if (!window.google) return;
+    const map = mapRef.current;
+    const first = directionsList?.[0];
+    if (!map || !first) return;
 
-  const onUnmount = useCallback(() => {
-    mapRef.current = null;
-  }, []);
+    const samples = samplePointsFromDirections(first, 1000, 12);
+    const service = new window.google.maps.places.PlacesService(map);
+    const seen = new Set();
+    const results = [];
 
-  if (!isLoaded) return <div>Loading Map...</div>;
+    const nearby = (req) =>
+      new Promise((resolve) => {
+        service.nearbySearch(req, (res, status) => {
+          if (
+            status === window.google.maps.places.PlacesServiceStatus.OK &&
+            Array.isArray(res)
+          )
+            resolve(res);
+          else resolve([]);
+        });
+      });
 
-  return (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={center}
-      zoom={12}
-      onLoad={onLoad}
-      onUnmount={onUnmount}
-    >
-      {markersList.map((routeMarkers, routeIdx) =>
-        routeMarkers.map((marker, stopIdx) => (
-          <Marker
-            key={`${routeIdx}-${stopIdx}`}
-            position={{ lat: marker.lat, lng: marker.lng }}
-            label={`${routeIdx + 1}-${stopIdx + 1}`}
-          />
-        ))
-      )}
-
-      {directionsList.map((directions, idx) =>
-        directions ? (
-          <DirectionsRenderer
-            key={idx}
-            directions={directions}
-            options={{
-              suppressMarkers: true,
-              preserveViewport: true,
-              polylineOptions: { strokeColor: '#3366FF', strokeWeight: 4 },
-            }}
-          />
-        ) : null
-      )}
-    </GoogleMap>
-  );
-};
-
-export default MapComponent;*/
-
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { GoogleMap, Marker, DirectionsRenderer, useJsApiLoader } from '@react-google-maps/api';
-
-const containerStyle = {
-  width: '100%',
-  height: '100vh',
-};
-
-const center = {
-  lat: -36.8485,
-  lng: 174.7633,
-};
-
-// 动态生成颜色函数（确保路线颜色不同）
-const getColor = (index) => `hsl(${(index * 75) % 360}, 100%, 50%)`;
-
-const MapComponent = ({ routeOptions }) => {
-  const [markersList, setMarkersList] = useState([]); // 每条路线的坐标数组
-  const [directionsList, setDirectionsList] = useState([]); // 每条路线的 DirectionsResult
-  const mapRef = useRef(null);
-
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-    libraries: ['places'],
-  });
-
-  // 地址转坐标
-  const geocodePlaces = async (places) => {
-    const geocoder = new window.google.maps.Geocoder();
-    const results = await Promise.all(
-      places.map(place =>
-        new Promise(resolve => {
-          geocoder.geocode({ address: place }, (res, status) => {
-            if (status === 'OK' && res[0]) {
-              const { lat, lng } = res[0].geometry.location;
-              resolve({ lat: lat(), lng: lng(), name: place });
-            } else {
-              console.warn('⚠️ Geocode failed for:', place);
-              resolve(null);
-            }
-          });
-        })
-      )
+    const activeTypes = ["restaurant", "gas_station", "supermarket", "toilet"].filter(
+      (t) => selectedTypes.has(t)
     );
-    return results.filter(Boolean);
+
+    for (const p of samples) {
+      const loc = new window.google.maps.LatLng(p.lat, p.lng);
+
+      for (const t of activeTypes) {
+        const req = {
+          location: loc,
+          radius: 400,
+          type: t === "toilet" ? undefined : t,
+          keyword: t === "toilet" ? "toilet" : undefined,
+        };
+        const res = await nearby(req);
+
+        for (const item of res.slice(0, 3)) {
+          const pid = item.place_id;
+          if (seen.has(pid)) continue;
+          seen.add(pid);
+
+          results.push({
+            placeId: pid,
+            pos: {
+              lat: item.geometry.location.lat(),
+              lng: item.geometry.location.lng(),
+            },
+            name: item.name,
+            type: t,
+            rating: item.rating,
+            openNow:
+              item.opening_hours?.isOpen?.() ?? item.opening_hours?.open_now,
+            address: item.vicinity,
+          });
+        }
+      }
+    }
+
+    setPoiMarkers(results);
   };
 
-  // 加载所有路线
-  const loadRoutes = useCallback(async () => {
-    if (!isLoaded || !routeOptions) return;
+  const clearPois = () => setPoiMarkers([]);
 
-    const allMarkers = [];
-    const allDirections = [];
+  const handleAddPoi = (poi) => {
+    if (onAddPoi) onAddPoi(poi);
+    else alert(`Added: ${poi.name}`);
+  };
 
-    for (let i = 0; i < routeOptions.length; i++) {
-      const stops = routeOptions[i].stops.map(stop => stop.place);
-      const coords = await geocodePlaces(stops);
+  const toggleType = (key) => {
+    setSelectedTypes((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
 
-      if (coords.length < 2) {
-        console.warn(`⚠️ Skipping route ${i + 1}: not enough valid coordinates`, coords);
-        continue;
-      }
-
-      allMarkers.push(coords);
-
-      const directionsService = new window.google.maps.DirectionsService();
-      const result = await new Promise(resolve => {
-        directionsService.route(
-          {
-            origin: coords[0],
-            destination: coords[coords.length - 1],
-            waypoints: coords.slice(1, -1).map(loc => ({ location: loc, stopover: true })),
-            travelMode: window.google.maps.TravelMode.DRIVING,
-          },
-          (res, status) => {
-            if (status === 'OK') {
-              resolve(res);
-            } else {
-              console.warn(`⚠️ Directions request failed for route ${i + 1}:`, status);
-              resolve(null);
-            }
-          }
-        );
-      });
-
-      allDirections.push(result);
-    }
-
-    setMarkersList(allMarkers);
-    setDirectionsList(allDirections);
-  }, [routeOptions, isLoaded]);
-
-  useEffect(() => {
-    loadRoutes();
-  }, [loadRoutes]);
-
-  const onLoad = useCallback(map => {
+  // ---------- Map lifecycle ----------
+  const onMapLoad = (map) => {
     mapRef.current = map;
-  }, []);
-
-  const onUnmount = useCallback(() => {
+  };
+  const onMapUnmount = () => {
     mapRef.current = null;
-  }, []);
+  };
 
   if (!isLoaded) return <div>Loading Map...</div>;
 
   return (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={center}
-      zoom={12}
-      onLoad={onLoad}
-      onUnmount={onUnmount}
-    >
-      {/* 渲染所有标记 */}
-      {markersList.map((routeMarkers, routeIdx) =>
-        routeMarkers.map((marker, stopIdx) => (
-          <Marker
-            key={`${routeIdx}-${stopIdx}`}
-            position={{ lat: marker.lat, lng: marker.lng }}
-            label={`${routeIdx + 1}-${stopIdx + 1}`}
-          />
-        ))
-      )}
+    // 这层非常关键：供工具条做绝对定位 & 提供高度上下文
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={defaultCenter}
+        zoom={12}
+        onLoad={onMapLoad}
+        onUnmount={onMapUnmount}
+        options={{
+          mapTypeControl: false,
+          fullscreenControl: false,
+          zoomControl: true,
+        }}
+      >
+        {/* Route stop markers */}
+        {routeMarkersList.map((routeMarkers, routeIdx) =>
+          routeMarkers.map((m, stopIdx) => (
+            <Marker
+              key={`${routeIdx}-${stopIdx}`}
+              position={{ lat: m.lat, lng: m.lng }}
+              label={`${routeIdx + 1}-${stopIdx + 1}`}
+            />
+          ))
+        )}
 
-      {/* 渲染所有路线，每条路线使用不同颜色 */}
-      {directionsList.map((directions, idx) =>
-        directions ? (
-          <DirectionsRenderer
-            key={idx}
-            directions={directions}
-            options={{
-              suppressMarkers: true,
-              preserveViewport: true,
-              polylineOptions: {
-                strokeColor: getColor(idx),
-                strokeWeight: 4,
-              },
+        {/* Routes */}
+        {directionsList.map((dir, idx) =>
+          dir ? (
+            <DirectionsRenderer
+              key={idx}
+              directions={dir}
+              options={{
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: {
+                  strokeColor: getRouteColor(idx),
+                  strokeWeight: 4,
+                },
+              }}
+            />
+          ) : null
+        )}
+
+        {/* POI markers (filtered) */}
+        {poiMarkers
+          .filter((p) => selectedTypes.has(p.type))
+          .map((poi) => (
+            <Marker
+              key={poi.placeId}
+              position={poi.pos}
+              label={POI_EMOJI[poi.type] || "📍"}
+              title={`${poi.name} • ${poi.type}${
+                poi.rating ? ` • ★ ${poi.rating}` : ""
+              }${
+                poi.openNow === true
+                  ? " • Open now"
+                  : poi.openNow === false
+                  ? " • Closed"
+                  : ""
+              }`}
+              onClick={() => handleAddPoi(poi)}
+            />
+          ))}
+      </GoogleMap>
+
+      {/* Floating POI toolbar（移到 GoogleMap 外侧，与之同级） */}
+      <div
+        style={{
+          position: "absolute",
+          top: 12,
+          left: 12,
+          zIndex: 3000,
+          display: "flex",
+          gap: 8,
+          background: "rgba(255,255,255,0.9)",
+          backdropFilter: "blur(8px)",
+          borderRadius: 12,
+          padding: "6px 8px",
+          boxShadow: "0 6px 16px rgba(0,0,0,0.18)",
+        }}
+      >
+        {Object.keys(POI_EMOJI).map((k) => (
+          <button
+            key={k}
+            onClick={() => toggleType(k)}
+            style={{
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "1px solid #d1d5db",
+              background: selectedTypes.has(k) ? "#111827" : "#ffffff",
+              color: selectedTypes.has(k) ? "#ffffff" : "#111827",
+              cursor: "pointer",
             }}
-          />
-        ) : null
-      )}
-    </GoogleMap>
+            title={k}
+          >
+            {POI_EMOJI[k]} {k.replace("_", " ")}
+          </button>
+        ))}
+        <button
+          onClick={fetchPoisAlongRoute}
+          style={{
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px solid #111827",
+            background: "#111827",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Show POIs
+        </button>
+        <button
+          onClick={clearPois}
+          style={{
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            background: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Clear
+        </button>
+      </div>
+    </div>
   );
 };
 
 export default MapComponent;
-
-
-/*import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { GoogleMap, Marker, DirectionsRenderer, useJsApiLoader } from '@react-google-maps/api';
-
-const containerStyle = {
-  width: '100%',
-  height: '100vh',
-};
-
-const center = {
-  lat: -36.8485,
-  lng: 174.7633,
-};
-
-// 手动设置三种颜色：红、绿、蓝
-const getColor = (index) => {
-  const colors = ['#FF0000', '#00AA00', '#0000FF'];
-  return colors[index % colors.length];
-};
-
-const MapComponent = ({ routeOptions }) => {
-  const [markersList, setMarkersList] = useState([]);
-  const [directionsList, setDirectionsList] = useState([]);
-  const mapRef = useRef(null);
-
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-    libraries: ['places'],
-  });
-
-  const geocodePlaces = async (places) => {
-    const geocoder = new window.google.maps.Geocoder();
-    const results = await Promise.all(
-      places.map(place =>
-        new Promise(resolve => {
-          geocoder.geocode({ address: place }, (res, status) => {
-            if (status === 'OK' && res[0]) {
-              const { lat, lng } = res[0].geometry.location;
-              resolve({ lat: lat(), lng: lng(), name: place });
-            } else {
-              console.warn('⚠️ Geocode failed for:', place);
-              resolve(null);
-            }
-          });
-        })
-      )
-    );
-    return results.filter(Boolean);
-  };
-
-  const applyOffsetToPolyline = (overviewPath, offsetIdx) => {
-    const offsetPath = overviewPath.map(latlng => ({
-      lat: latlng.lat() + offsetIdx * 0.0002,
-      lng: latlng.lng() + offsetIdx * 0.0002,
-    }));
-    return offsetPath;
-  };
-
-  const loadRoutes = useCallback(async () => {
-    if (!isLoaded || !routeOptions) return;
-
-    const allMarkers = [];
-    const allDirections = [];
-
-    for (let i = 0; i < routeOptions.length; i++) {
-      const stops = routeOptions[i].stops.map(stop => stop.place);
-      const coords = await geocodePlaces(stops);
-
-      if (coords.length < 2) {
-        console.warn(`⚠️ Skipping route ${i + 1}: not enough valid coordinates`, coords);
-        continue;
-      }
-
-      allMarkers.push(coords);
-
-      const directionsService = new window.google.maps.DirectionsService();
-      const result = await new Promise(resolve => {
-        directionsService.route(
-          {
-            origin: coords[0],
-            destination: coords[coords.length - 1],
-            waypoints: coords.slice(1, -1).map(loc => ({ location: loc, stopover: true })),
-            travelMode: window.google.maps.TravelMode.DRIVING,
-          },
-          (res, status) => {
-            if (status === 'OK') {
-              // 对每条路线添加偏移字段
-              res.overview_path_offset = applyOffsetToPolyline(res.routes[0].overview_path, i);
-              resolve(res);
-            } else {
-              console.warn(`⚠️ Directions request failed for route ${i + 1}:`, status);
-              resolve(null);
-            }
-          }
-        );
-      });
-
-      allDirections.push(result);
-    }
-
-    setMarkersList(allMarkers);
-    setDirectionsList(allDirections);
-  }, [routeOptions, isLoaded]);
-
-  useEffect(() => {
-    loadRoutes();
-  }, [loadRoutes]);
-
-  const onLoad = useCallback(map => {
-    mapRef.current = map;
-  }, []);
-
-  const onUnmount = useCallback(() => {
-    mapRef.current = null;
-  }, []);
-
-  if (!isLoaded) return <div>Loading Map...</div>;
-
-  return (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={center}
-      zoom={12}
-      onLoad={onLoad}
-      onUnmount={onUnmount}
-    >
-      {/* 渲染所有标记 *///}
-      /*{markersList.map((routeMarkers, routeIdx) =>
-        routeMarkers.map((marker, stopIdx) => (
-          <Marker
-            key={`${routeIdx}-${stopIdx}`}
-            position={{ lat: marker.lat, lng: marker.lng }}
-            label={`${routeIdx + 1}-${stopIdx + 1}`}
-          />
-        ))
-      )}
-
-      {/* 渲染所有路线 *///}
-      /*{directionsList.map((directions, idx) =>
-        directions ? (
-          <DirectionsRenderer
-            key={idx}
-            directions={directions}
-            options={{
-              suppressMarkers: true,
-              preserveViewport: true,
-              polylineOptions: {
-                path: directions.overview_path_offset, // 用偏移路径
-                strokeColor: getColor(idx),
-                strokeWeight: 4,
-              },
-            }}
-          />
-        ) : null
-      )}
-    </GoogleMap>
-  );
-};
-
-export default MapComponent;*/
-
-
-
-
-
-
-
-
-

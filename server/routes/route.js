@@ -12,12 +12,22 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /** 生成路线（你原本的接口，保持不变） */
 router.post('/generate-route', async (req, res) => {
-  const { location, preference } = req.body;
+  const { start, end } = req.body;
   const prompt = `
-  You are a travel planner. I want to visit ${location} and I enjoy ${preference}. 
-  Please suggest 5 different travel itinerary option. Each option should include 3 different stops in ${location} or nearby that use real locations in Auckland, New Zealand.
-  Only include real places in Auckland. Do NOT include locations in other countries or other regions.
-  Please generate attractions located within Auckland city and easily reachable by car (within 30 minutes drive). Avoid islands or ferry-only places.
+You are a travel planner. 
+I will give you a starting point (${start}) and a destination (${end}) in New Zealand.  
+
+Generate exactly 5 driving itinerary options, each with 3 stops.  
+
+Rules:
+- The 3 stops must be towns or attractions that appear directly on the real driving route from ${start} to ${end}, or within 10 minutes driving distance from that route.
+  The first stop must be somewhere in ${start} city, the last stop must be somewhere in ${end} city, and the middle stop must be somewhere in between.
+- Do not include famous places from other regions of New Zealand if they are not directly on the driving path. 
+- Avoid Rotorua, Napier, Queenstown, Christchurch, Dunedin, or any South Island locations unless ${start} and ${end} are in those areas. 
+- If there are not many options, it is fine to repeat nearby towns or use smaller stops, as long as they are on the route.
+
+
+
   Return your answer in JSON:
   [
     { "option": 1, "stops": [ { "time": "10:00 AM", "place": "PLACE NAME 1", "description": "..." }, ... ] },
