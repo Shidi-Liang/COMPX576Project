@@ -1,38 +1,72 @@
-.App {
-  text-align: center;
+/* index.css - Light Theme 全局样式 */
+
+:root {
+  --bg: #f9fafb;          /* 背景主色 */
+  --card: #ffffff;        /* 卡片背景 */
+  --text: #1f2937;        /* 正文字体颜色 */
+  --muted: #6b7280;       /* 辅助文字颜色 */
+  --primary: #2563eb;     /* 主色按钮/高亮 */
+  --primary-fore: #ffffff;/* 按钮文字颜色 */
+  --ring: rgba(37, 99, 235, 0.35);
+  --error: #dc2626;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+/* 全局背景和字体 */
+body, html, #root {
+  margin: 0;
+  padding: 0;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
 
-.App-link {
-  color: #61dafb;
+/* 卡片式容器 */
+.card, .timeline-card, .map-shell {
+  background: var(--card);
+  color: var(--text);
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  padding: 16px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* 标题 */
+h1, h2, h3, h4, h5 {
+  color: var(--text);
+  margin: 0;
+}
+
+/* 按钮 */
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-fore);
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+/* 错误提示 */
+.auth-msg.error {
+  color: var(--error);
+  font-size: 14px;
+}
+
+/* 输入框 */
+input, textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px;
+  background: #ffffff;
+  color: var(--text);
 }

@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import UserForm from "../components/UserForm";
 import MapComponent from "../components/MapComponent";
 import TimelineView from "../components/TimelineView";
 import { authFetch } from "../api";
 import "../Auth.css";
 
-/** Right-side Drawer (提升 z-index，确保在最上层) */
+// 只引入 Autocomplete（不要 useJsApiLoader）
+import { Autocomplete } from "@react-google-maps/api";
+
+/** Right-side Drawer */
 const Drawer = ({ open, onClose, title, children }) => (
   <>
     <div
@@ -17,7 +20,7 @@ const Drawer = ({ open, onClose, title, children }) => (
         opacity: open ? 1 : 0,
         pointerEvents: open ? "auto" : "none",
         transition: "opacity .15s",
-        zIndex: 8999, // ⬅️ 提高遮罩层级
+        zIndex: 8999,
       }}
     />
     <aside
@@ -33,7 +36,7 @@ const Drawer = ({ open, onClose, title, children }) => (
         boxShadow: "0 8px 30px rgba(0,0,0,.25)",
         transform: open ? "translateX(0)" : "translateX(100%)",
         transition: "transform .2s",
-        zIndex: 9000, // ⬅️ 提高抽屉层级（高于 toolbar 的 5000）
+        zIndex: 9000,
         display: "flex",
         flexDirection: "column",
       }}
@@ -48,9 +51,7 @@ const Drawer = ({ open, onClose, title, children }) => (
         }}
       >
         <strong>{title}</strong>
-        <button onClick={onClose} className="logout-btn">
-          Close
-        </button>
+        <button onClick={onClose} className="logout-btn">Close</button>
       </div>
       <div style={{ padding: 16, overflow: "auto", flex: 1 }}>{children}</div>
     </aside>
@@ -58,6 +59,56 @@ const Drawer = ({ open, onClose, title, children }) => (
 );
 
 export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
+  // ---- Autocomplete inputs ----
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  const [startCoord, setStartCoord] = useState(null);
+  const [endCoord, setEndCoord] = useState(null);
+  const startAutoRef = useRef(null);
+  const endAutoRef = useRef(null);
+
+  // ✅ 等待 MapComponent 加载好的 Google 脚本（只检测，不加载）
+  const [gmReady, setGmReady] = useState(
+    typeof window !== "undefined" && !!window.google?.maps?.places
+  );
+  useEffect(() => {
+    if (gmReady) return;
+    let timer;
+    const tick = () => {
+      if (window.google?.maps?.places) {
+        setGmReady(true);
+        if (timer) clearTimeout(timer);
+      } else {
+        timer = setTimeout(tick, 150);
+      }
+    };
+    tick();
+    return () => timer && clearTimeout(timer);
+  }, [gmReady]);
+
+  const handlePlaceChanged = (which) => {
+    const ac = which === "start" ? startAutoRef.current : endAutoRef.current;
+    if (!ac?.getPlace) return; // 安全保护
+    const place = ac.getPlace();
+    if (!place) return;
+
+    const addr = place.formatted_address || place.name || "";
+    const loc = place.geometry?.location;
+    const coords = loc ? { lat: loc.lat(), lng: loc.lng() } : null;
+
+    if (which === "start") {
+      setStart(addr);
+      if (coords) setStartCoord(coords);
+    } else {
+      setEnd(addr);
+      if (coords) setEndCoord(coords);
+    }
+
+    // 如果你想选完就触发路线生成，可以在这里调用你的函数：
+    // if (startCoord && endCoord) generateRoutes(startCoord, endCoord);
+  };
+
+  // ---- Route options / saved routes ----
   const [routeOptions, setRouteOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(0);
 
@@ -66,7 +117,6 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
   const [errSaved, setErrSaved] = useState("");
   const [activeSavedRoute, setActiveSavedRoute] = useState(null);
 
-  // 拉取抽屉数据
   useEffect(() => {
     if (!showSavedRoutes) return;
     (async () => {
@@ -85,7 +135,6 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
     })();
   }, [showSavedRoutes]);
 
-  // 把保存的路线加载到地图/时间线
   const loadRouteToMap = (route) => {
     const stops = route?.stops || [];
     setRouteOptions([{ stops }]);
@@ -94,7 +143,6 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
     onCloseSavedRoutes?.();
   };
 
-  // 保存当前选项
   const saveRoute = async () => {
     const selectedRoute = routeOptions[selectedOption];
     if (!selectedRoute) return alert("No route selected");
@@ -131,10 +179,84 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
         <p className="page-sub">Plan, filter and visualise your trip.</p>
       </div>
 
-      {/* 搜索工具条在 UserForm 里 */}
-      <UserForm onResults={setRouteOptions} />
+      {/* Start / Destination with Google Autocomplete */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginTop: 8,
+          marginBottom: 8,
+          position: "relative",
+          zIndex: 5000, // 确保下拉在地图之上
+          flexWrap: "wrap",
+        }}
+      >
+        {/* Start */}
+        {gmReady ? (
+          <Autocomplete
+            onLoad={(ac) => (startAutoRef.current = ac)}
+            onPlaceChanged={() => handlePlaceChanged("start")}
+            options={{
+              componentRestrictions: { country: "nz" },
+              fields: ["formatted_address", "geometry", "name", "place_id"],
+              types: ["geocode"],
+            }}
+          >
+            <input
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              placeholder="Start address (New Zealand)"
+              style={{ padding: "10px 12px", width: 320, borderRadius: 8 }}
+            />
+          </Autocomplete>
+        ) : (
+          <input
+            value={start}
+            onChange={(e) => setStart(e.target.value)}
+            placeholder="Start address (loading Maps…)"
+            style={{ padding: "10px 12px", width: 320, borderRadius: 8 }}
+          />
+        )}
 
-      {/* 选项 + 时间线 */}
+        {/* Destination */}
+        {gmReady ? (
+          <Autocomplete
+            onLoad={(ac) => (endAutoRef.current = ac)}
+            onPlaceChanged={() => handlePlaceChanged("end")}
+            options={{
+              componentRestrictions: { country: "nz" },
+              fields: ["formatted_address", "geometry", "name", "place_id"],
+              types: ["geocode"],
+            }}
+          >
+            <input
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              placeholder="Destination (New Zealand)"
+              style={{ padding: "10px 12px", width: 320, borderRadius: 8 }}
+            />
+          </Autocomplete>
+        ) : (
+          <input
+            value={end}
+            onChange={(e) => setEnd(e.target.value)}
+            placeholder="Destination (loading Maps…)"
+            style={{ padding: "10px 12px", width: 320, borderRadius: 8 }}
+          />
+        )}
+      </div>
+
+      {/* 你的生成工具条 */}
+      <UserForm
+        start={start}
+        end={end}
+        startCoord={startCoord}
+        endCoord={endCoord}
+        onResults={setRouteOptions}
+      />
+
+
+      {/* Options + Timeline */}
       {routeOptions.length > 0 && (
         <>
           <div
@@ -169,12 +291,12 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
         </>
       )}
 
-      {/* 地图 */}
+      {/* Map */}
       <div className="map-shell" style={{ height: "62vh", marginTop: 12 }}>
         <MapComponent routeOptions={routeOptions} />
       </div>
 
-      {/* 右侧抽屉 */}
+      {/* Drawer */}
       <Drawer
         open={showSavedRoutes}
         onClose={onCloseSavedRoutes}
@@ -196,16 +318,10 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
             >
               <h3 style={{ margin: 0 }}>{activeSavedRoute.title}</h3>
               <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  className="logout-btn"
-                  onClick={() => loadRouteToMap(activeSavedRoute)}
-                >
+                <button className="logout-btn" onClick={() => loadRouteToMap(activeSavedRoute)}>
                   Load to map
                 </button>
-                <button
-                  className="logout-btn"
-                  onClick={() => setActiveSavedRoute(null)}
-                >
+                <button className="logout-btn" onClick={() => setActiveSavedRoute(null)}>
                   Back
                 </button>
               </div>
@@ -309,6 +425,3 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
     </div>
   );
 }
-
-
-

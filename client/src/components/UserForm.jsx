@@ -1,63 +1,130 @@
 // src/components/UserForm.jsx
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { authFetch } from "../api";
 
-const UserForm = ({ onResults }) => {
-  const [start, setstart] = useState('');
-  const [end, setend] = useState('');
+/**
+ * 简化后的 UserForm
+ * - 起终点从父组件传入（MapPage 的 Autocomplete）
+ * - 点击 Generate 调 /generate-route（只要 { start, end }）
+ * - 解析后交给 onResults
+ * - 生成成功 → 顶部显示英文提示（3 秒自动消失）
+ */
+export default function UserForm({
+  start,
+  end,
+  onResults,
+  // 预留：坐标暂不需要
+  startCoord,
+  endCoord,
+}) {
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [message, setMessage] = useState(""); // ✅ 成功提示
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const canGenerate = !!(start && end);
+
+  const handleGenerate = async () => {
+    if (!canGenerate) return;
+    setLoading(true);
+    setErr("");
+    setMessage(""); // 每次点击前先清空上一次的提示
+
     try {
-      const response = await fetch('http://localhost:3001/api/route/generate-route', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await authFetch("http://localhost:3001/api/route/generate-route", {
+        method: "POST",
         body: JSON.stringify({ start, end }),
       });
-      const data = await response.json();
-      if (response.ok) {
-        const parsedResult = JSON.parse(data.result);
-        onResults(parsedResult);
-      } else {
-        alert('Failed to fetch route: ' + data.error);
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setErr(data.message || `HTTP ${res.status}`);
+        return;
       }
-    } catch (err) {
-      alert('Something went wrong');
+      if (!data?.success || !data?.result) {
+        setErr(data?.error || data?.message || "Server returned no result");
+        return;
+      }
+
+      // 解析后端返回的 JSON 字符串
+      let routeOptions = [];
+      try {
+        routeOptions = JSON.parse(data.result);
+      } catch {
+        const m = String(data.result).match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+        if (m) routeOptions = JSON.parse(m[0]);
+      }
+
+      if (!Array.isArray(routeOptions) || routeOptions.length === 0) {
+        setErr("Parsed route list is empty");
+        return;
+      }
+
+      // 交给父组件渲染
+      onResults?.(routeOptions);
+
+      // ✅ 显示成功提示（英文）
+      setMessage("Route has been successfully generated!");
+      // 如需原生弹窗，打开下一行：
+      // alert("✅ Route has been successfully generated!");
+
+      // 3s 后自动清除提示
+      setTimeout(() => setMessage(""), 3000);
+    } catch (e) {
+      setErr("Network error");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    // 工具条外层：卡片+投影+固定在标题下方
-    <div className="toolbar toolbar-sticky">
-      <form onSubmit={handleSubmit} className="controls controls-lg">
-        <input
-          type="text"
-          className="input input-lg"
-          placeholder="Starting Location"
-          value={start}
-          onChange={(e) => setstart(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          className="input input-lg"
-          placeholder="destination"
-          value={end}
-          onChange={(e) => setend(e.target.value)}
-          required
-        />
-        <button type="submit" className="btn btn-primary btn-lg btn-cta">
-          Generate
-        </button>
-      </form>
+    <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+      <div className="small" style={{ color: "var(--muted)" }}>
+        {start ? `From: ${start}` : "Pick start…"} &nbsp;→&nbsp;
+        {end ? `To: ${end}` : "Pick destination…"}
+      </div>
 
-      {/* 你有 POI 的小药丸按钮的话，也放在 toolbar 里更协调 */}
-      {/* <div className="btn-group pills-scroll">
-        ...
-      </div> */}
+      <button
+        className="btn btn-primary"
+        onClick={handleGenerate}
+        disabled={!canGenerate || loading}
+        title={!canGenerate ? "Please pick start and destination above" : ""}
+      >
+        {loading ? "Generating…" : "Generate"}
+      </button>
+
+      {/* ✅ 成功提示条（无打断，3 秒自动消失） */}
+      {message && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            padding: "6px 12px",
+            borderRadius: 8,
+            background: "#e6ffed",
+            color: "#027a48",
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          {message}
+        </div>
+      )}
+
+      {/* 错误信息 */}
+      {err && (
+        <div
+          className="auth-msg error"
+          style={{
+            marginLeft: 8,
+            color: "#dc2626",
+            fontSize: 14,
+            fontWeight: 500,
+          }}
+        >
+          {err}
+        </div>
+      )}
     </div>
   );
-};
-
-export default UserForm;
-
-
+}
