@@ -19,7 +19,7 @@ const LoginForm = ({ onLogin, onShowRegister }) => {
     if (!password) return setMsg("Password is required.");
 
     setLoading(true);
-    try {3001
+    try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
