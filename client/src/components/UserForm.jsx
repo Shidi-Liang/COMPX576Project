@@ -30,7 +30,7 @@ export default function UserForm({
     setMessage(""); // 每次点击前先清空上一次的提示
 
     try {
-      const res = await authFetch("http://localhost:3001/api/route/generate-route", {
+      const res = await authFetch("/api/route/generate-route", {
         method: "POST",
         body: JSON.stringify({ start, end }),
       });

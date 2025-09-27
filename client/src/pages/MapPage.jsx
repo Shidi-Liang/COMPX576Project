@@ -123,7 +123,7 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
       setLoadingSaved(true);
       setErrSaved("");
       try {
-        const res = await authFetch("http://localhost:3001/api/route/my-routes");
+        const res = await authFetch("/api/route/my-routes");
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.success) setSavedRoutes(data.routes || []);
         else setErrSaved(data.message || `Failed to load routes (${res.status})`);
@@ -147,7 +147,7 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
     const selectedRoute = routeOptions[selectedOption];
     if (!selectedRoute) return alert("No route selected");
     try {
-      const res = await authFetch("http://localhost:3001/api/route/save-route", {
+      const res = await authFetch("/api/route/save-route", {
         method: "POST",
         body: JSON.stringify({
           userId: user?.id,
@@ -159,7 +159,7 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
       if (res.ok && data.success) {
         alert("Route saved successfully!");
         if (showSavedRoutes) {
-          const r2 = await authFetch("http://localhost:3001/api/route/my-routes");
+          const r2 = await authFetch("/api/route/my-routes");
           const d2 = await r2.json();
           if (r2.ok && d2.success) setSavedRoutes(d2.routes || []);
         }
