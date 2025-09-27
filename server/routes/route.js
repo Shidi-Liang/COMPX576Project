@@ -203,27 +203,34 @@ router.post('/generate-route', async (req, res) => {
 /** ========= 新增：带鉴权的“保存路线 / 我的路线” ========= **/
 
 // 保存路线（必须登录）
+// server/routes/route.js
 router.post('/save-route', requireAuth, async (req, res) => {
   try {
     const { title, stops } = req.body || {};
+
+    // 简单校验
     if (!Array.isArray(stops) || stops.length < 2) {
       return res.status(400).json({ success: false, message: 'stops is required' });
     }
-    // 从鉴权中间件拿用户 ID（看你中间件把啥放在 req.user 上）
-    const userId = (req.user && (req.user.id || req.user.sub || req.user._id));
+
+    // 从鉴权中间件拿用户ID
+    const userId = req.user && (req.user.id || req.user.sub || req.user._id);
     if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
+    // 只写 title（和模型一致）
     const doc = await Route.create({
       userId,
-      name: name || title || 'Untitled route',
+      title: (title && title.trim()) || `My Trip - ${new Date().toLocaleString()}`,
       stops
     });
-    return res.status(201).json({ success: true, routeId: doc._id });
+
+    return res.status(201).json({ success: true, routeId: doc._id, route: doc });
   } catch (e) {
     console.error('save-route error:', e);
-    return res.status(500).json({ success: false, message: 'Failed to save route' });
+    return res.status(500).json({ success: false, message: e.message || 'Failed to save route' });
   }
 });
+
 
 // 我的路线（必须登录）
 router.get('/my-routes', requireAuth, async (req, res) => {
