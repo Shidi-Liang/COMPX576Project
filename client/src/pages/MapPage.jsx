@@ -392,7 +392,7 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
         ) : savedRoutes.length === 0 ? (
           <div className="auth-msg">No saved routes yet.</div>
         ) : (
-                    <ul
+          <ul
             style={{
               listStyle: "none",
               padding: 0,
@@ -415,20 +415,11 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
                   justifyContent: "space-between",
                 }}
               >
-                <div>
-                  <div style={{ fontWeight: 700 }}>{r.title}</div>
-                  {/* ✅ 保存时间 */}
-                  <div className="small" style={{ color: "var(--muted)" }}>
-                    {r.createdAt ? new Date(r.createdAt).toLocaleString() : "—"}
-                  </div>
-                </div>
-
-                {/* 右侧仍显示 stops 数量 */}
+                <div style={{ fontWeight: 700 }}>{r.title}</div>
                 <div className="small">{(r.stops || []).length} stops</div>
               </li>
             ))}
           </ul>
-
         )}
       </Drawer>
     </div>

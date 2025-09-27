@@ -205,7 +205,7 @@ router.post('/generate-route', async (req, res) => {
 // 保存路线（必须登录）
 router.post('/save-route', requireAuth, async (req, res) => {
   try {
-    const { title, name, stops } = req.body || {};
+    const { title, stops } = req.body || {};
     if (!Array.isArray(stops) || stops.length < 2) {
       return res.status(400).json({ success: false, message: 'stops is required' });
     }
