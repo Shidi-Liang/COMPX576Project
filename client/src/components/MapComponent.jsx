@@ -101,8 +101,8 @@ export default function MapComponent({ routeOptions = [] }) {
               .slice(1, -1)
               .map((loc) => ({ location: loc, stopover: true })),
             travelMode: window.google.maps.TravelMode.DRIVING,
-            optimizeWaypoints: false, // 不要重排/省略
-            avoidFerries: true,       // 避免轮渡导致 ZERO_RESULTS
+            optimizeWaypoints: false, 
+            avoidFerries: true,       
           },
           (res, status) => resolve({ res, status })
         );

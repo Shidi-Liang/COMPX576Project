@@ -170,8 +170,8 @@ body::before {
 
 /* ========== Hierarchical relationship between toolbars and drawers ========== */
 .toolbar,
-.toolbar-sticky { position: sticky; top: 64px; z-index: 5000; }     /* 工具条在上，但低于抽屉 */
-body.drawer-open .page        { padding-right: 380px; }              /* 可选：抽屉打开给右侧留空间 */
+.toolbar-sticky { position: sticky; top: 64px; z-index: 5000; }     
+body.drawer-open .page        { padding-right: 380px; }              
 body.drawer-open .timeline-card,
 body.drawer-open .map-shell   { margin-right: 380px; }
 

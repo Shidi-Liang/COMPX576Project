@@ -52,7 +52,7 @@ User → React Frontend → Express API → MongoDB Atlas
 ### 1. Clone the repository
 ```bash
 git clone https://github.com/Shidi-Liang/COMPX576Project.git
-cd SmartTravelBuddy
+cd COMPX576Project
 ```
 ### 2. Install dependencies
 Frontend
@@ -77,10 +77,12 @@ MONGO_URI=your_mongodb_connection_string
 ### 4. Run locally
 Backend:
 ```bash
+cd server
 node index.js
 ```
 Frontend:
 ```bash
+cd client
 npm start
 ```
 This service starts the React application, which will automatically open in your browser, usually at http://localhost:3000.

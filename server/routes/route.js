@@ -6,8 +6,8 @@ const OpenAI = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Introducing model + authentication middleware
-const Route = require('../models/Route');                 // 你的 Mongoose 模型
-const requireAuth = require('../middleware/requireAuth'); // 你的 JWT 中间件（把用户放到 req.user）
+const Route = require('../models/Route');                 
+const requireAuth = require('../middleware/requireAuth'); 
 
 /** Tool: Extract JSON from jumbled text */
 function extractJson(text) {
