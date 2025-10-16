@@ -53,17 +53,19 @@ User → React Frontend → Express API → MongoDB Atlas
 ```bash
 git clone https://github.com/Shidi-Liang/COMPX576Project.git
 cd SmartTravelBuddy
-
+```
 ### 2. Install dependencies
-
 Frontend
+```bash
 cd client
 npm install
+```
 Backend
+```bash
 cd server
 npm install
-
-3. Configure environment variables
+```
+### 3. Configure environment variables
 
 Create .env files in both client/ and server/ directories.
 
@@ -72,22 +74,24 @@ OPENAI_API_KEY=your_openai_key
 GOOGLE_MAPS_API_KEY=your_google_api_key
 MONGO_URI=your_mongodb_connection_string
 
-4. Run locally
-
+### 4. Run locally
 Backend:
+```bash
 node index.js
+```
 Frontend:
+```bash
 npm start
-
+```
 This service starts the React application, which will automatically open in your browser, usually at http://localhost:3000.
 
-🌐 Deployment URLs
+## 🌐 Deployment URLs
 
 Frontend: https://smart-travel-buddy.vercel.app
 
 Backend API: https://smart-travel-buddy-api.onrender.com
 
-🧠 Example Workflow
+## 🧠 Example Workflow
 
 Enter your starting point and destination.
 
@@ -99,7 +103,7 @@ View up to five generated route options displayed on the interactive map.
 
 Explore trip timelines for more detailed insights.
 
-🧑‍💻 Author
+## 🧑‍💻 Author
 
 Shidi Liang (1665337) — Full-stack development, UI design, and API integration
 
