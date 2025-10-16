@@ -51,10 +51,10 @@ User → React Frontend → Express API → MongoDB Atlas
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/SmartTravelBuddy.git
+git clone https://github.com/Shidi-Liang/COMPX576Project.git
 cd SmartTravelBuddy
 
-2. Install dependencies
+### 2. Install dependencies
 
 Frontend
 cd client
