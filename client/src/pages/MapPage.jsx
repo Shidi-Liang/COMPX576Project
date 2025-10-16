@@ -4,8 +4,6 @@ import MapComponent from "../components/MapComponent";
 import TimelineView from "../components/TimelineView";
 import { authFetch } from "../api";
 import "../Auth.css";
-
-// 只引入 Autocomplete（不要 useJsApiLoader）
 import { Autocomplete } from "@react-google-maps/api";
 
 /** Right-side Drawer */
@@ -67,7 +65,7 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
   const startAutoRef = useRef(null);
   const endAutoRef = useRef(null);
 
-  // ✅ 等待 MapComponent 加载好的 Google 脚本（只检测，不加载）
+  // Google script that waits for MapComponent to load (check only, not load)
   const [gmReady, setGmReady] = useState(
     typeof window !== "undefined" && !!window.google?.maps?.places
   );
@@ -88,7 +86,7 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
 
   const handlePlaceChanged = (which) => {
     const ac = which === "start" ? startAutoRef.current : endAutoRef.current;
-    if (!ac?.getPlace) return; // 安全保护
+    if (!ac?.getPlace) return; // Security protection
     const place = ac.getPlace();
     if (!place) return;
 
@@ -103,9 +101,6 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
       setEnd(addr);
       if (coords) setEndCoord(coords);
     }
-
-    // 如果你想选完就触发路线生成，可以在这里调用你的函数：
-    // if (startCoord && endCoord) generateRoutes(startCoord, endCoord);
   };
 
   // ---- Route options / saved routes ----
@@ -187,7 +182,7 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
           marginTop: 8,
           marginBottom: 8,
           position: "relative",
-          zIndex: 5000, // 确保下拉在地图之上
+          zIndex: 5000, // Make sure users drop down on the map
           flexWrap: "wrap",
         }}
       >
@@ -246,7 +241,7 @@ export default function MapPage({ user, showSavedRoutes, onCloseSavedRoutes }) {
         )}
       </div>
 
-      {/* 你的生成工具条 */}
+      {/* Generate Toolbar */}
       <UserForm
         start={start}
         end={end}

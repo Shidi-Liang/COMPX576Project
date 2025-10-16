@@ -9,12 +9,12 @@ const TimelineView = ({ stops }) => {
     <div className="tl">
       {stops.map((stop, index) => (
         <div key={index} className="tl-item">
-          {/* 左边的时间线圆点+竖线 */}
+          {/* Timeline dot + vertical line on the left */}
           <div className="tl-dot">
             {index !== stops.length - 1 && <div className="tl-line"></div>}
           </div>
 
-          {/* 右边的内容卡片 */}
+          {/* Content card on the right */}
           <div className="tl-card">
             <div className="tl-head">
               <span className="tl-place">{stop.place}</span>
