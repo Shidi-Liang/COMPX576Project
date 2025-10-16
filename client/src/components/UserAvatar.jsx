@@ -1,11 +1,11 @@
 import React from "react";
 import "../Auth.css";
 
-// 从邮箱里提取首字母缩写
+// Extract initials from mailbox
 function initialsFromEmail(email = "") {
   const name = email.split("@")[0] || "";
   const parts = name
-    .replace(/[^a-zA-Z0-9_.-]/g, " ")  // ✅ 修正：- 放到结尾（或转义）
+    .replace(/[^a-zA-Z0-9_.-]/g, " ")  
     .split(/[\s._-]+/)
     .filter(Boolean);
   const first = parts[0]?.[0] ?? email[0] ?? "U";
@@ -13,7 +13,7 @@ function initialsFromEmail(email = "") {
   return (first + second).toUpperCase();
 }
 
-// 根据字符串生成固定颜色
+// Generate a fixed color based on a string
 function colorFromString(str = "") {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
