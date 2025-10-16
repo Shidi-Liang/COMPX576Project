@@ -14,7 +14,7 @@ function signToken(user) {
   );
 }
 
-// 登录
+// Log in
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -31,7 +31,7 @@ router.post('/login', async (req, res) => {
   });
 });
 
-// 注册
+// register
 router.post('/register', async (req, res) => {
   const { email, password } = req.body;
 

@@ -1,17 +1,16 @@
-/* index.css - Light Theme 全局样式 */
-
+/* Global styles */
 :root {
-  --bg: #f9fafb;          /* 背景主色 */
-  --card: #ffffff;        /* 卡片背景 */
-  --text: #1f2937;        /* 正文字体颜色 */
-  --muted: #6b7280;       /* 辅助文字颜色 */
-  --primary: #2563eb;     /* 主色按钮/高亮 */
-  --primary-fore: #ffffff;/* 按钮文字颜色 */
+  --bg: #f9fafb;          /* Background main color */
+  --card: #ffffff;        /* Card Background */
+  --text: #1f2937;        /* Text font color */
+  --muted: #6b7280;       /* Secondary text color */
+  --primary: #2563eb;     /* Primary color button/highlight */
+  --primary-fore: #ffffff;/* Button text color */
   --ring: rgba(37, 99, 235, 0.35);
   --error: #dc2626;
 }
 
-/* 全局背景和字体 */
+/* Global background and fonts */
 body, html, #root {
   margin: 0;
   padding: 0;
@@ -22,7 +21,7 @@ body, html, #root {
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
 
-/* 卡片式容器 */
+/* Card container */
 .card, .timeline-card, .map-shell {
   background: var(--card);
   color: var(--text);
@@ -31,13 +30,13 @@ body, html, #root {
   padding: 16px;
 }
 
-/* 标题 */
+/* title */
 h1, h2, h3, h4, h5 {
   color: var(--text);
   margin: 0;
 }
 
-/* 按钮 */
+/* Button */
 .btn {
   padding: 8px 16px;
   border-radius: 8px;
@@ -56,13 +55,13 @@ h1, h2, h3, h4, h5 {
   background: #1d4ed8;
 }
 
-/* 错误提示 */
+/* Error message */
 .auth-msg.error {
   color: var(--error);
   font-size: 14px;
 }
 
-/* 输入框 */
+/* Input Box */
 input, textarea {
   border: 1px solid #d1d5db;
   border-radius: 6px;

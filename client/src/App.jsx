@@ -8,9 +8,9 @@ import TopNav from "./components/TopNav";
 function App() {
   const [user, setUser] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
-  const [showSavedRoutes, setShowSavedRoutes] = useState(false); // ✅ 头像菜单打开“我的路线”
+  const [showSavedRoutes, setShowSavedRoutes] = useState(false); // Open "My Route" from the avatar menu
 
-  // 挂载时从 localStorage 恢复登录
+  // Restore login from localStorage on mount
   useEffect(() => {
     const cachedUser = localStorage.getItem("stb_user");
     if (cachedUser) {
@@ -18,7 +18,7 @@ function App() {
     }
   }, []);
 
-  // 登录成功：保存 user / token（LoginForm 要传 onLogin(user, remember, token)）
+  // Login successful: save user/token
   const handleLogin = (u, remember, token) => {
     setUser(u);
     if (remember) {
@@ -39,25 +39,25 @@ function App() {
 
   const handleRegistered = () => setShowRegister(false);
 
-  // 已登录：顶部导航 + 主页面
+  // Logged in: Top navigation + Home page
   if (user) {
     return (
       <div>
         <TopNav
           user={user}
           onLogout={handleLogout}
-          onMyRoutes={() => setShowSavedRoutes(true)}   // ✅ 点击菜单打开
+          onMyRoutes={() => setShowSavedRoutes(true)}   // Click the menu to open
         />
         <MapPage
           user={user}
-          showSavedRoutes={showSavedRoutes}              // ✅ 传给 MapPage
+          showSavedRoutes={showSavedRoutes}              // Pass to MapPage
           onCloseSavedRoutes={() => setShowSavedRoutes(false)}
         />
       </div>
     );
   }
 
-  // 未登录：登录 / 注册
+  // Not logged in: Log in / Register
   return (
     <div>
       {showRegister ? (

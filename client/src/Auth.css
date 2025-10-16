@@ -1,6 +1,6 @@
 /* ========== Tokens ========== */
 :root{
-  --bg: #0f1116;              /* 深色为主，下面有动画背景 */
+  --bg: #0f1116;              /* Mainly dark, with an animated background below */
   --card: #161a23;
   --text: #e5e7eb;
   --muted: #9ca3af;
@@ -15,7 +15,7 @@
   --shadow: 0 12px 40px rgba(0,0,0,.40);
 }
 
-/* 浅色主题变量（系统强制浅色时使用） */
+/* Light theme variant (used when the system forces light colors) */
 @media (prefers-color-scheme: light) {
   :root{
     --bg: #f5f7fb;
@@ -30,7 +30,7 @@
 * { box-sizing: border-box; }
 html, body { line-height: 1.5; }
 
-/* ========== 炫彩动效背景 + 彩光 ========== */
+/* ========== Colorful dynamic background + colorful light ========== */
 body {
   color: var(--text);
   background: linear-gradient(-45deg, #101827, #0f172a, #0b1222, #141a2a);
@@ -61,13 +61,13 @@ body::before {
   body::before { filter: blur(12px) saturate(110%); }
 }
 
-/* ========== 页面布局 ========== */
+/* ========== Page Layout ========== */
 .page { max-width: 1120px; margin: 0 auto; padding: 20px 16px 80px; }
 .page-header { margin: 8px 0 10px; }
 .page-title { font-size: 28px; font-weight: 800; margin: 0; color: #f9fbff; text-shadow: 0 2px 18px rgba(59,130,246,.25); }
 .page-sub   { margin-top: 4px; color: #cdd7e6; font-size: 14px; }
 
-/* ========== 顶部工具条（容纳 UserForm） ========== */
+/* ========== Top toolbar (holds UserForm) ========== */
 .toolbar {
   background: rgba(255,255,255,0.08);
   border: 1px solid var(--border);
@@ -80,7 +80,7 @@ body::before {
 }
 .toolbar-sticky { position: sticky; top: 64px; }
 
-/* 大号表单控件（UserForm） */
+/* Large form controls（UserForm） */
 .controls-lg { display: grid; grid-template-columns: 1fr 1fr 220px; gap: 12px; align-items: center; }
 .input      { width: 100%; border: 1px solid rgba(15,23,42,.18); background: rgba(255,255,255,.88); color: #0f172a; border-radius: 12px; padding: 12px 16px; outline: none; transition: box-shadow .18s, border-color .18s, transform .04s; }
 .input::placeholder { color: #9aa6b2; }
@@ -97,7 +97,7 @@ body::before {
   .btn-cta { width: 100%; min-width: 0; }
 }
 
-/* ========== 选项分段控件（Option 1…） ========== */
+/* ========== Option Segmented Control（Option 1…） ========== */
 .seg {
   display: inline-flex;
   border: 1px solid var(--border);
@@ -113,7 +113,7 @@ body::before {
 .seg button + button { border-left: 1px solid rgba(255,255,255,.12); }
 .seg button[aria-pressed="true"] { color: #0f172a; background: rgba(255,255,255,.85); }
 
-/* ========== 时间线卡片 ========== */
+/* ========== Timeline Card ========== */
 .timeline-card {
   padding: 16px 18px;
   border: 1px solid var(--border);
@@ -135,9 +135,9 @@ body::before {
 /* ========== Sticky actions ========== */
 .actions { position: sticky; bottom: 10px; display: flex; gap: 10px; padding-top: 10px; }
 
-/* ========== 地图外壳 与 POI 工具条 ========== */
+/* ==========  Map Shell ========== */
 .map-shell {
-  position: relative;            /* 作为 POI 工具条定位参照 */
+  position: relative;            
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -164,18 +164,18 @@ body::before {
 .poi-toolbar button:hover{ background: #e5e7eb; transform: translateY(-1px); }
 .poi-toolbar button:active{ transform: translateY(0); }
 
-/* 谷歌地图内部层级兜底（极少需要，但安全） */
+/* Google Maps internal layer backup */
 .map-shell .gm-style,
 .map-shell .gm-style > div { z-index: 1 !important; }
 
-/* ========== 工具条与抽屉的层级关系 ========== */
+/* ========== Hierarchical relationship between toolbars and drawers ========== */
 .toolbar,
 .toolbar-sticky { position: sticky; top: 64px; z-index: 5000; }     /* 工具条在上，但低于抽屉 */
 body.drawer-open .page        { padding-right: 380px; }              /* 可选：抽屉打开给右侧留空间 */
 body.drawer-open .timeline-card,
 body.drawer-open .map-shell   { margin-right: 380px; }
 
-/* ========== Auth/Login 相关（保留但精简） ========== */
+/* ========== Auth/Login related ========== */
 .auth-page { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
 .auth-card {
   width: 100%; max-width: 420px; background: var(--card); color: var(--text);
@@ -191,7 +191,7 @@ body.drawer-open .map-shell   { margin-right: 380px; }
 .auth-msg { margin-top: 10px; font-size: 14px; color: var(--muted); }
 .auth-msg.error { color: var(--error); }
 
-/* ========== 顶部导航/菜单（保留） ========== */
+/* ========== Top navigation/menu ========== */
 .topnav {
   height: 56px; display: flex; align-items: center; justify-content: space-between;
   padding: 0 16px; background: var(--card); color: var(--text);
@@ -203,7 +203,7 @@ body.drawer-open .map-shell   { margin-right: 380px; }
 .dropdown-menu {
   position: absolute; top: 46px; right: 0; background: var(--card); color: var(--text);
   border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
-  min-width: 210px; padding: 6px; z-index: 7000;  /* 高于工具条 */
+  min-width: 210px; padding: 6px; z-index: 7000;  /* Above toolbar */
 }
 .menu-header { padding: 8px 10px; font-size: 12px; color: var(--muted); }
 .menu-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: transparent; border: 0; padding: 10px 12px; border-radius: 8px; cursor: pointer; color: var(--text); }

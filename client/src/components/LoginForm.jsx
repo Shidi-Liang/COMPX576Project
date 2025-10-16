@@ -30,7 +30,7 @@ const LoginForm = ({ onLogin, onShowRegister }) => {
         setMsg(data.message || `Login failed (${res.status})`);
         return;
       }
-      onLogin?.(data.user, remember, data.token); // 传给 App.jsx，决定是否写 localStorage
+      onLogin?.(data.user, remember, data.token); // Pass it to App.jsx to decide whether to write to localStorage
     } catch {
       setMsg("Network error");
     } finally {

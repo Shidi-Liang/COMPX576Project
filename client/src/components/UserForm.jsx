@@ -1,25 +1,23 @@
-// src/components/UserForm.jsx
 import React, { useState } from "react";
 import { authFetch } from "../api";
 
 /**
- * 简化后的 UserForm
- * - 起终点从父组件传入（MapPage 的 Autocomplete）
- * - 点击 Generate 调 /generate-route（只要 { start, end }）
- * - 解析后交给 onResults
- * - 生成成功 → 顶部显示英文提示（3 秒自动消失）
+ * - The start and end points are passed in from the parent component (MapPage's Autocomplete)
+ * - Click Generate to call /generate-route (just { start, end })
+ * - After parsing, pass it to onResults
+ * - Generate successfully → English prompt is displayed at the top (disappears automatically after 3 seconds)
  */
 export default function UserForm({
   start,
   end,
   onResults,
-  // 预留：坐标暂不需要
+  // Reserved: coordinates not needed yet
   startCoord,
   endCoord,
 }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
-  const [message, setMessage] = useState(""); // ✅ 成功提示
+  const [message, setMessage] = useState(""); // Success Tips
 
   const canGenerate = !!(start && end);
 
@@ -27,7 +25,7 @@ export default function UserForm({
     if (!canGenerate) return;
     setLoading(true);
     setErr("");
-    setMessage(""); // 每次点击前先清空上一次的提示
+    setMessage(""); // Clear the last prompt before each click
 
     try {
       const res = await authFetch("/api/route/generate-route", {
@@ -46,7 +44,7 @@ export default function UserForm({
         return;
       }
 
-      // 解析后端返回的 JSON 字符串
+      // Parse the JSON string returned by the backend
       let routeOptions = [];
       try {
         routeOptions = JSON.parse(data.result);
@@ -60,15 +58,12 @@ export default function UserForm({
         return;
       }
 
-      // 交给父组件渲染
+      // Hand it over to the parent component for rendering
       onResults?.(routeOptions);
 
-      // ✅ 显示成功提示（英文）
+      // Display success prompt
       setMessage("Route has been successfully generated!");
-      // 如需原生弹窗，打开下一行：
-      // alert("✅ Route has been successfully generated!");
-
-      // 3s 后自动清除提示
+      // Automatically clear the reminder after 3 seconds
       setTimeout(() => setMessage(""), 3000);
     } catch (e) {
       setErr("Network error");
@@ -93,7 +88,7 @@ export default function UserForm({
         {loading ? "Generating…" : "Generate"}
       </button>
 
-      {/* ✅ 成功提示条（无打断，3 秒自动消失） */}
+      {/* Success prompt bar (no interruption, automatically disappears after 3 seconds) */}
       {message && (
         <div
           role="status"
@@ -111,7 +106,7 @@ export default function UserForm({
         </div>
       )}
 
-      {/* 错误信息 */}
+      {/* error message */}
       {err && (
         <div
           className="auth-msg error"

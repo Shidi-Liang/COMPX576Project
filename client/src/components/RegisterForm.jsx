@@ -1,8 +1,10 @@
 import { useState } from "react";
 import "../Auth.css";
 
+// Regular expression to validate email format
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Function to evaluate password strength (returns a score between 0 and 5)
 function passwordStrength(pw) {
   let score = 0;
   if (pw.length >= 8) score++;
@@ -14,6 +16,7 @@ function passwordStrength(pw) {
 }
 
 export default function RegisterForm({ onRegistered, onShowLogin }) {
+  // React state hooks
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -21,31 +24,38 @@ export default function RegisterForm({ onRegistered, onShowLogin }) {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // Calculate password strength dynamically
   const strength = passwordStrength(password);
   const weak = strength <= 2;
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMsg("");
 
+    // Input validation
     if (!emailRegex.test(email)) return setMsg("Invalid email format.");
     if (password.length < 6) return setMsg("Password must be at least 6 characters.");
     if (password !== confirm) return setMsg("Passwords do not match.");
 
     setLoading(true);
     try {
+      // Send POST request to backend API
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+      // Attempt to parse the response as JSON
       const data = await res.json().catch(() => ({}));
+      // Handle error or success response
       if (!res.ok || !data.success) {
         setMsg(data.message || `Registration failed (${res.status})`);
         return;
       }
+      // If success, show message and trigger callback
       setMsg("Registered successfully! Please log in.");
-      onRegistered?.();
+      onRegistered?.();   // optional callback from parent component
     } catch {
       setMsg("Network error");
     } finally {

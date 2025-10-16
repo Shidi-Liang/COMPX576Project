@@ -7,13 +7,13 @@ import {
   useJsApiLoader,
 } from "@react-google-maps/api";
 
-/** ─────────── 基础样式 ─────────── */
+/** ─────────── Basic Styling ─────────── */
 const containerStyle = { width: "100%", height: "100%" };
 const defaultCenter = { lat: -36.8485, lng: 174.7633 }; // Auckland
 
-/** 亮色调色板：更清晰 */
+/** Light Color Palette: Clearer appearance */
 const getColor = (index) => {
-  const palette = ["#00BFFF", "#FF4500", "#32CD32", "#FF1493", "#FFD700"]; // 天蓝/橙红/草绿/艳粉/金色
+  const palette = ["#00BFFF", "#FF4500", "#32CD32", "#FF1493", "#FFD700"]; //Sky Blue/Orange Red/Grass Green/Hot Pink/Gold
   return palette[index % palette.length];
 };
 
@@ -30,11 +30,11 @@ export default function MapComponent({ routeOptions = [] }) {
 
   const [markersList, setMarkersList] = useState([]);      // [[{lat,lng,name}], ...]
   const [directionsList, setDirectionsList] = useState([]); // [DirectionsResult|null, ...]
-  const [activeIdx, setActiveIdx] = useState(null);        // 图例高亮：null=全部
-  const [hoverIdx, setHoverIdx] = useState(null);          // 图例悬浮：临时加粗
-  const [selectedStop, setSelectedStop] = useState(null);  // InfoWindow 数据
+  const [activeIdx, setActiveIdx] = useState(null);        // Legend highlight: null = all
+  const [hoverIdx, setHoverIdx] = useState(null);          // Legend hover: temporary bold
+  const [selectedStop, setSelectedStop] = useState(null);  // InfoWindow data
 
-  /** ─────────── 工具函数 ─────────── */
+  /** ─────────── Utility Functions ─────────── */
   const fitToBounds = useCallback((coordsList) => {
     if (!mapRef.current || !coordsList?.length) return;
     const bounds = new window.google.maps.LatLngBounds();
@@ -46,7 +46,7 @@ export default function MapComponent({ routeOptions = [] }) {
     if (!bounds.isEmpty()) mapRef.current.fitBounds(bounds, 60);
   }, []);
 
-  // 统计里程/时长（来自 DirectionsResult）
+  // Count mileage/duration (from DirectionsResult)
   const getStats = (dir) => {
     try {
       const legs = dir?.routes?.[0]?.legs || [];
@@ -58,7 +58,7 @@ export default function MapComponent({ routeOptions = [] }) {
     }
   };
 
-  /** 地名 → 坐标（自动补“, New Zealand”，打印失败 status） */
+  /** Place name → coordinates (automatically fills in ", New Zealand", prints failed status) */
   const geocodePlaces = useCallback(async (places) => {
     const geocoder = new window.google.maps.Geocoder();
     const results = await Promise.all(
@@ -84,7 +84,7 @@ export default function MapComponent({ routeOptions = [] }) {
     return results.filter(Boolean);
   }, []);
 
-  /** 逐步剔除导致 ZERO_RESULTS 的中途点，直到能出可画路线 */
+  /** Gradually remove the intermediate points that lead to ZERO_RESULTS until a drawable route can be obtained */
   const requestDirectionsWithPruning = useCallback(async (coords) => {
     const ds =
       directionsServiceRef.current ||
@@ -112,7 +112,7 @@ export default function MapComponent({ routeOptions = [] }) {
     let { res, status } = await ask(useList);
     if (status === "OK") return { directions: res, removedIdx: [] };
 
-    // 逐个剔除中途点（最多剔 3 个）
+    // Remove midway points one by one (up to 3)
     const removed = [];
     const midIdxs = Array.from(
       { length: Math.max(0, useList.length - 2) },
@@ -139,16 +139,16 @@ export default function MapComponent({ routeOptions = [] }) {
 
     if (status === "OK") return { directions: res, removedIdx: removed };
 
-    // 仍失败：退化为起点→终点
+    // Still failed: degenerated to the starting point → end point
     const fallback = [coords[0], coords[coords.length - 1]];
     const { res: r3, status: s3 } = await ask(fallback);
     if (s3 === "OK") return { directions: r3, removedIdx: midIdxs };
 
-    // 实在不行，返回空
+    // If it doesn't work, return empty.
     return { directions: null, removedIdx: midIdxs };
   }, []);
 
-  /** 加载所有路线：geocode → 剔除容错求路 → 渲染 */
+  /** Load all routes: geocode → remove error-tolerant routing → render */
   const loadRoutes = useCallback(async () => {
     if (!isLoaded || !routeOptions?.length) {
       setMarkersList([]);
@@ -180,7 +180,7 @@ export default function MapComponent({ routeOptions = [] }) {
         continue;
       }
 
-      // 2) 去掉相邻重复点（同一坐标会导致失败）
+      // 2) Remove adjacent duplicate points (the same coordinates will cause failure)
       const deduped = coords.filter((p, idx, arr) => {
         if (idx === 0) return true;
         const prev = arr[idx - 1];
@@ -189,13 +189,13 @@ export default function MapComponent({ routeOptions = [] }) {
 
       allMarkers.push(deduped);
 
-      // 3) 请求 Directions（带“剔除不可达中途点”的容错）
+      // 3) Request Directions (with fault tolerance for removing unreachable waypoints)
       const { directions, removedIdx } = await requestDirectionsWithPruning(
         deduped
       );
 
       if (removedIdx?.length) {
-        // 标注被剔除的点名，方便回头优化后端
+        // Mark the names of the eliminated points to facilitate back-end optimization
         const removedNames = removedIdx
           .map(
             (mid) =>
@@ -216,7 +216,7 @@ export default function MapComponent({ routeOptions = [] }) {
     setMarkersList(allMarkers);
     setDirectionsList(allDirections);
 
-    // 初次视野：包含当前可见路线的点
+    // Initial view: Contains points on the currently visible route
     const visible = activeIdx == null ? allMarkers : [allMarkers[activeIdx] || []];
     fitToBounds(visible);
   }, [isLoaded, routeOptions, requestDirectionsWithPruning, geocodePlaces, fitToBounds, activeIdx]);
@@ -228,10 +228,10 @@ export default function MapComponent({ routeOptions = [] }) {
 
   if (!isLoaded) return <div style={{ padding: 12 }}>Loading Map…</div>;
 
-  /** ─────────── 渲染 ─────────── */
+  /** ─────────── Rendering ─────────── */
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* 图例：浅底 + 彩色边框；点击高亮、悬浮描边 */}
+      {/* Legend: Light background + colored border; click to highlight, floating stroke */}
       {directionsList.length > 0 && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "8px 0" }}>
           {directionsList.map((dir, idx) => {
@@ -276,7 +276,7 @@ export default function MapComponent({ routeOptions = [] }) {
         </div>
       )}
 
-      {/* 地图 */}
+      {/* map */}
       <div style={{ flex: 1, minHeight: 360 }}>
         <GoogleMap
           mapContainerStyle={containerStyle}
@@ -290,7 +290,7 @@ export default function MapComponent({ routeOptions = [] }) {
             fullscreenControl: false,
           }}
         >
-          {/* Marker（按 activeIdx 过滤） */}
+          {/* Marker (filtered by activeIdx) */}
           {markersList.map((routeMarkers, routeIdx) =>
             (routeMarkers || []).map((marker, stopIdx) => {
               const show = activeIdx == null || activeIdx === routeIdx;
@@ -321,7 +321,7 @@ export default function MapComponent({ routeOptions = [] }) {
             })
           )}
 
-          {/* InfoWindow：亮色样式 */}
+          {/* InfoWindow：Bright style */}
           {selectedStop && (
             <InfoWindow
               position={selectedStop.position}
@@ -356,7 +356,7 @@ export default function MapComponent({ routeOptions = [] }) {
             </InfoWindow>
           )}
 
-          {/* 路线：高亮更粗更亮；非激活半透明 */}
+          {/* Route: highlights are thicker and brighter; inactive ones are semi-transparent */}
           {directionsList.map((dir, idx) => {
             if (!dir) return null;
             const isActive = activeIdx == null || activeIdx === idx;

@@ -1,4 +1,3 @@
-// server/routes/route.js
 const express = require('express');
 const router = express.Router();
 
@@ -6,11 +5,11 @@ require('dotenv').config();
 const OpenAI = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// 👇👇 新增：引入模型 + 鉴权中间件（必须存在）
+// Introducing model + authentication middleware
 const Route = require('../models/Route');                 // 你的 Mongoose 模型
 const requireAuth = require('../middleware/requireAuth'); // 你的 JWT 中间件（把用户放到 req.user）
 
-/** 工具：从混杂文本里抠出 JSON */
+/** Tool: Extract JSON from jumbled text */
 function extractJson(text) {
   if (!text) return null;
   let m = text.match(/\[[\s\S]*\]/);
@@ -20,7 +19,7 @@ function extractJson(text) {
   return null;
 }
 
-/** 兜底：修正/补齐 5 条路线，并强制首尾为指定起终点 */
+/** Back-up: Modify/complete 5 routes and force the start and end points to be designated */
 function validateAndFixRoutes(inputRoutes, start, end) {
   const safeText = (s) => (typeof s === 'string' ? s : String(s || ''));
   const routes = Array.isArray(inputRoutes) ? inputRoutes : [];
@@ -98,7 +97,7 @@ function validateAndFixRoutes(inputRoutes, start, end) {
   return clean;
 }
 
-/** 构造 Prompt */
+/** Constructing Prompt */
 function buildPrompt(start, end) {
   return `
 You are a meticulous travel planner.
@@ -129,7 +128,7 @@ OUTPUT (JSON ONLY — no extra text):
 ]`.trim();
 }
 
-/** 调用模型 */
+/** Calling Model */
 async function callModelForRoutes(start, end) {
   const prompt = buildPrompt(start, end);
   try {
@@ -166,7 +165,7 @@ async function callModelForRoutes(start, end) {
   return [];
 }
 
-/** 生成路线（保持你原有逻辑） */
+/** Generate Route */
 router.post('/generate-route', async (req, res) => {
   const { start, end } = req.body || {};
   if (!start || !end) {
@@ -200,24 +199,23 @@ router.post('/generate-route', async (req, res) => {
   }
 });
 
-/** ========= 新增：带鉴权的“保存路线 / 我的路线” ========= **/
+/** ========= "Save Route / My Route" with authentication ========= **/
 
-// 保存路线（必须登录）
-// server/routes/route.js
+// Save route (must be logged in)
 router.post('/save-route', requireAuth, async (req, res) => {
   try {
     const { title, stops } = req.body || {};
 
-    // 简单校验
+    // Simple verification
     if (!Array.isArray(stops) || stops.length < 2) {
       return res.status(400).json({ success: false, message: 'stops is required' });
     }
 
-    // 从鉴权中间件拿用户ID
+    // Get the user ID from the authentication middleware
     const userId = req.user && (req.user.id || req.user.sub || req.user._id);
     if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    // 只写 title（和模型一致）
+    // Just write title (consistent with the model)
     const doc = await Route.create({
       userId,
       title: (title && title.trim()) || `My Trip - ${new Date().toLocaleString()}`,
@@ -232,7 +230,7 @@ router.post('/save-route', requireAuth, async (req, res) => {
 });
 
 
-// 我的路线（必须登录）
+// My Routes (must be logged in)
 router.get('/my-routes', requireAuth, async (req, res) => {
   try {
     const userId = (req.user && (req.user.id || req.user.sub || req.user._id));

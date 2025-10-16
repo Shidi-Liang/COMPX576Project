@@ -8,25 +8,25 @@ const routeRoutes = require('./routes/route');
 
 const app = express();
 
-// 中间件
+// middleware
 app.use(cors());
 app.use(express.json());
 
-// 路由
+// routing
 app.use('/api/auth', authRoutes);
 app.use('/api/route', routeRoutes);
 
-// 健康检查路由（Render 会定时访问）
+// Health check routing (Render will visit it regularly)
 app.get('/healthz', (req, res) => {
   res.status(200).send('ok');
 });
 
-// MongoDB 连接
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// 启动服务器
+// Start the server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 

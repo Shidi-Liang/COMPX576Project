@@ -1,4 +1,3 @@
-// src/components/TopNav.jsx
 import React, { useEffect, useRef, useState } from "react";
 import "../Auth.css";
 import UserAvatar from "./UserAvatar";
@@ -68,7 +67,7 @@ export default function TopNav({ user, onLogout, onProfile, onSettings, onMyRout
               Settings
             </button>
 
-            {/* 新增：我的路线 */}
+            {/* My route */}
             <button className="menu-item" role="menuitem" onClick={() => { onMyRoutes?.(); setOpen(false); }}>
               <svg className="mi icon-purple" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 2h9a3 3 0 0 1 3 3v12.5a1.5 1.5 0 0 1-2.402 1.187L12 16.25l-3.598 2.437A1.5 1.5 0 0 1 6 17.5V2Z"/>

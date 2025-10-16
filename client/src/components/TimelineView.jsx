@@ -1,22 +1,3 @@
-/*import React from 'react';
-
-const TimelineView = ({ stops }) => {
-  return (
-    <div style={{ padding: '1rem' }}>
-      <h2>🕰️ Timeline View</h2>
-      {stops.map((stop, index) => (
-        <div key={index} style={{ marginBottom: '1.5rem' }}>
-          <h3>{stop.time} – {stop.place}</h3>
-          <p>{stop.description}</p>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-export default TimelineView;*/
-
-
 import React from "react";
 
 const TimelineView = ({ stops }) => {
