@@ -85,7 +85,8 @@ Frontend:
 cd client
 npm start
 ```
-This service starts the React application, which will automatically open in your browser, usually at http://localhost:3000.
+⚠️ Note: In the deployed version, all API calls are routed to the production backend (https://smart-travel-buddy-api.onrender.com).
+If you wish to run the project locally, configure a proxy to forward requests to the deployed backend.
 
 ## 🌐 Deployment URLs
 

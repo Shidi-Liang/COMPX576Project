@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import "../Auth.css";
 
+// Basic email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Login form component
 const LoginForm = ({ onLogin, onShowRegister }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,21 +13,26 @@ const LoginForm = ({ onLogin, onShowRegister }) => {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMsg("");
 
+    // Basic input validation
     if (!emailRegex.test(email)) return setMsg("Invalid email format.");
     if (!password) return setMsg("Password is required.");
 
     setLoading(true);
     try {
+      // Send login request to backend API
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+      // Parse JSON response safely
       const data = await res.json().catch(() => ({}));
+      // Handle success or failure
       if (!res.ok || !data.success) {
         setMsg(data.message || `Login failed (${res.status})`);
         return;
@@ -44,6 +51,7 @@ const LoginForm = ({ onLogin, onShowRegister }) => {
         <h2 className="auth-title">Welcome back</h2>
         <p className="auth-sub">Log in to continue</p>
 
+        {/* Login form */}
         <form onSubmit={handleSubmit} noValidate>
           <div className="auth-field">
             <label className="auth-label">Email</label>
